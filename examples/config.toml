@@ -1,0 +1,15 @@
+# SSH authentication and host settings come from ~/.ssh/config.
+version = 1
+default_profile = "work"
+
+[profiles.work]
+host = "my-server" # Replace with your SSH alias or user@hostname.
+# Local port : destination host (as seen from the server) : destination port.
+# Local listeners always bind to 127.0.0.1.
+forwards = ["3000:localhost:3000", "8080:localhost:8080"]
+
+# Additional profiles can use other SSH aliases:
+# [profiles.staging]
+# host = "staging-server"
+# forwards = ["9000:localhost:9000"]
+# tmux_socket = "development" # Optional: equivalent to tmux -L development.

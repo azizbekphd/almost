@@ -1,0 +1,45 @@
+[build-system]
+requires = ["setuptools>=77"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "almost-cli"
+dynamic = ["version"]
+description = "Reliable SSH tunnels and tmux reconnection from your terminal"
+readme = "README.md"
+requires-python = ">=3.11"
+license = "MIT"
+license-files = ["LICENSE"]
+authors = [{name = "Azizbek"}]
+keywords = ["ssh", "tmux", "tunnels", "terminal", "remote-development"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Environment :: Console",
+    "Operating System :: MacOS",
+    "Operating System :: POSIX :: Linux",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3 :: Only",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
+    "Topic :: System :: Networking",
+    "Topic :: Utilities",
+]
+dependencies = []
+
+[project.urls]
+Homepage = "https://github.com/azizbekphd/almost"
+Documentation = "https://github.com/azizbekphd/almost#readme"
+Repository = "https://github.com/azizbekphd/almost"
+Issues = "https://github.com/azizbekphd/almost/issues"
+Changelog = "https://github.com/azizbekphd/almost/blob/main/CHANGELOG.md"
+
+[project.scripts]
+almost = "almost.cli:main"
+
+[tool.setuptools.packages.find]
+include = ["almost*"]
+
+[tool.setuptools.dynamic]
+version = {attr = "almost.__version__"}

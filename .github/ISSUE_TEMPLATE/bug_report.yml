@@ -1,0 +1,26 @@
+name: Bug report
+description: Report a reproducible problem with almost
+body:
+  - type: markdown
+    attributes:
+      value: "For vulnerabilities, use the private reporting link in SECURITY.md. Redact private values from diagnostics."
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Steps to reproduce
+      description: Include the command, expected behavior, and actual behavior.
+    validations:
+      required: true
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment
+      description: Local OS, Python version, almost version, remote tmux version, and installation method.
+    validations:
+      required: true
+  - type: textarea
+    id: diagnostics
+    attributes:
+      label: Redacted diagnostics
+      description: Relevant doctor, status, and logs output. Remove private values and credentials.
+      render: text
