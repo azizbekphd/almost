@@ -27,7 +27,9 @@ class TmuxTests(unittest.TestCase):
         subprocess.run(["tmux", "-L", self.socket, "kill-server"], capture_output=True)
 
     def tm(self, *args):
-        return subprocess.run(["tmux", "-L", self.socket, *args], capture_output=True, text=True, check=True).stdout.strip()
+        result = subprocess.run(["tmux", "-L", self.socket, *args], capture_output=True, text=True)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        return result.stdout.strip()
 
     def snapshot(self):
         value = subprocess.run(["sh", "-c", snapshot_script(self.profile, self.scope)], capture_output=True, text=True, check=True)
@@ -118,6 +120,13 @@ class TmuxTests(unittest.TestCase):
         self.assertEqual(self.snapshot().remembered, "$0")
         old_server = self.snapshot().server
         self.tm("kill-server")
+        # kill-server can return while the server still owns its socket. Wait
+        # for that process to finish before starting another on the same socket.
+        def server_exited():
+            state = subprocess.run(["ps", "-p", old_server.split(":")[0], "-o", "stat="],
+                                   capture_output=True, text=True).stdout.strip()
+            return not state or state.startswith("Z")
+        wait_for(server_exited)
         self.tm("-f", "/dev/null", "new-session", "-d", "-s", "unrelated", "sh")
         snapshot = self.snapshot()
         self.assertEqual(snapshot.sessions[0].id, "$0")
