@@ -6,6 +6,10 @@ which will be described here.
 
 ## [Unreleased]
 
+- Add `almost update` to download and verify the latest stable GitHub Release
+  for offline installations, preserving custom prefixes and configuration.
+  `--source PATH` installs a local checkout or extracted release without network
+  access. Failed replacement packages restore the previous installed package.
 - Fix Termux startup failing with permission denied for `/tmp/almost-UID` by
   honoring the system temporary directory outside macOS. Compact socket paths
   also accommodate Termux's longer temporary directory and OpenSSH's suffix.

@@ -125,6 +125,7 @@ prerequisites, checksum verification, custom locations, upgrades, and removal.
 | `almost logs work --lines 100` | Show recent SSH diagnostics |
 | `almost doctor work` | Check configuration, SSH, remote tmux, and local ports |
 | `almost stop work` | Stop this profile's tunnels and interactive connection |
+| `almost update` | Install the latest published release for an offline installation |
 
 Profile names are optional and default to `default_profile`. To connect to a
 different profile, use `almost connect staging`. `almost init` preserves an

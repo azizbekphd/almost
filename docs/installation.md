@@ -133,10 +133,36 @@ almost stop work
 almost stop staging  # If this profile is running.
 ```
 
-For the offline installer, download and extract the new release, then rerun
-`sh install.sh` with the same prefix. For pipx, install the new release's wheel
-URL with `pipx install --force URL`. For a normal environment, use its Python
-to run `-m pip install --no-index --no-deps --upgrade /path/to/new.whl`.
+For installations made with the offline installer, run this from any directory:
+
+```sh
+almost update
+```
+
+It checks the latest stable GitHub Release, downloads the source archive and
+`SHA256SUMS`, verifies the archive, and installs into the existing prefix. It
+requires no pip or additional Python packages. If your version is already
+current, it leaves the installation alone. Active supervisors must be stopped
+first; the updater reports an error if one is still running. Installation stages
+the replacement package and restores the old package if the new CLI fails to start.
+
+Older versions without the `update` command need one installation of updated
+source using `sh install.sh` with the same prefix to gain this command. You can
+still download and extract releases manually and run their offline installer.
+
+To install an unreleased fix from an updated checkout, or use already downloaded
+and extracted source without network access:
+
+```sh
+almost update --source /path/to/almost
+```
+
+The source directory must contain `almost/` and `scripts/install.py`. This option
+installs the files currently in that directory; it does not fetch Git changes.
+
+For pipx, install the new release's wheel URL with `pipx install --force URL`.
+For a normal environment, use its Python to run
+`-m pip install --no-index --no-deps --upgrade /path/to/new.whl`.
 Replace versions in download URLs and filenames with the desired release.
 
 Check `almost --version`, run `almost doctor`, and reconnect. Configuration

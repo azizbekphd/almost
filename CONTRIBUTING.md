@@ -23,9 +23,9 @@ python3 -m venv .venv
 ## Tests
 
 The default suite tests configuration, shell protocol handling, private state,
-offline installation, and actual CLI subprocesses with a deterministic SSH
-fixture. Process tests require Unix sockets and pseudo-terminals; run outside
-sandboxes that prohibit those resources.
+offline installation and verified release updates, and actual CLI subprocesses
+with a deterministic SSH fixture. Process tests require Unix sockets and
+pseudo-terminals; run outside sandboxes that prohibit those resources.
 
 With local tmux 3.2+, exercise the actual shell scripts and hooks:
 

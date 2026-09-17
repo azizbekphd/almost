@@ -19,8 +19,10 @@ def parser() -> argparse.ArgumentParser:
     result = argparse.ArgumentParser(prog="almost", description="Reliable SSH tunnels and tmux reconnection. With no command, connect to your default profile.")
     result.add_argument("--config", type=Path, default=config_path(), help="configuration file")
     result.add_argument("--version", action="version", version=f"almost {__version__}")
-    sub = result.add_subparsers(dest="command", metavar="{init,connect,up,status,logs,doctor,stop}")
+    sub = result.add_subparsers(dest="command", metavar="{init,connect,up,status,logs,doctor,stop,update}")
     sub.add_parser("init", help="create your initial configuration")
+    updater = sub.add_parser("update", help="install the latest published release")
+    updater.add_argument("--source", type=Path, help="install from a local source directory instead of downloading")
     for command, help_text in [
         ("connect", "start tunnels and attach to remembered tmux session"),
         ("up", "start background tunnels"), ("status", "show forwarding state"),
@@ -139,6 +141,9 @@ def main(argv: list[str] | None = None) -> int:
     try:
         if args.command == "init":
             return init(args.config)
+        if args.command == "update":
+            from .update import update
+            return update(args.source)
         config = load(args.config)
         profile = config.profile(getattr(args, "profile", None))
         runtime = Runtime.for_profile(config, profile)
