@@ -2,7 +2,8 @@
 
 ## Prerequisites
 
-Use macOS or Linux with Python 3.11+ and OpenSSH. Check locally:
+Use macOS, Linux, or Termux on Android with Python 3.11+ and OpenSSH. The download
+examples also use `curl` and `tar`. Check locally:
 
 ```sh
 python3 --version
@@ -19,8 +20,17 @@ On Debian/Ubuntu whose packaged Python is 3.11 or newer:
 
 ```sh
 sudo apt-get update
-sudo apt-get install python3 python3-venv openssh-client
+sudo apt-get install python3 python3-venv openssh-client curl tar
 ```
+
+On [Termux](https://github.com/termux/termux-packages):
+
+```sh
+pkg install python openssh curl tar
+```
+
+If an older Termux installation fails with permission denied for `/tmp/almost-UID`,
+go directly to [older-version upgrade steps](#older-versions-without-update).
 
 If your distribution supplies an older Python, install Python 3.11+ through a
 supported method for that distribution. The installer uses `python3` from PATH;
@@ -40,45 +50,62 @@ It does not need Python or an installation of `almost`.
 
 ## Download and verify a release
 
-Download the source archive and checksums from the same tagged release:
+Find the latest stable version once, then download the source archive and
+checksums from that same tagged release:
 
 ```sh
-curl -fL -o almost_cli-0.2.0.tar.gz https://github.com/azizbekphd/almost/releases/download/v0.2.0/almost_cli-0.2.0.tar.gz
-curl -fL -o SHA256SUMS https://github.com/azizbekphd/almost/releases/download/v0.2.0/SHA256SUMS
+ALMOST_VERSION=$(curl -fsSL https://api.github.com/repos/azizbekphd/almost/releases/latest |
+  python3 -c 'import json, sys; print(json.load(sys.stdin)["tag_name"].removeprefix("v"))') &&
+ALMOST_ARCHIVE="almost_cli-${ALMOST_VERSION}.tar.gz" &&
+ALMOST_RELEASE_URL="https://github.com/azizbekphd/almost/releases/download/v${ALMOST_VERSION}" &&
+curl -fL -o "$ALMOST_ARCHIVE" "$ALMOST_RELEASE_URL/$ALMOST_ARCHIVE" &&
+curl -fL -o SHA256SUMS "$ALMOST_RELEASE_URL/SHA256SUMS"
 ```
+
+Keep using the same shell so these variables remain available. To select a
+specific release instead, set `ALMOST_VERSION` to its version (without `v`)
+instead of running the lookup. The [latest-release API](https://docs.github.com/en/rest/releases/releases#get-the-latest-release)
+selects a published stable release.
 
 Verify the archive on macOS:
 
 ```sh
-awk '$2 == "almost_cli-0.2.0.tar.gz"' SHA256SUMS | shasum -a 256 -c -
+awk -v archive="$ALMOST_ARCHIVE" '$2 == archive' SHA256SUMS | shasum -a 256 -c -
 ```
 
-Or on Linux:
+Or on Linux and Termux:
 
 ```sh
-awk '$2 == "almost_cli-0.2.0.tar.gz"' SHA256SUMS | sha256sum -c -
+awk -v archive="$ALMOST_ARCHIVE" '$2 == archive' SHA256SUMS | sha256sum -c -
 ```
 
 The result should say `OK`. Checksums detect download corruption; they are not
-independent signatures. Then extract and install:
+independent signatures. Once verification succeeds, extract and install:
 
 ```sh
-tar -xzf almost_cli-0.2.0.tar.gz
-cd almost_cli-0.2.0
-sh install.sh
-export PATH="$HOME/.local/bin:$PATH"
-almost --version
+tar -xzf "$ALMOST_ARCHIVE" &&
+cd "almost_cli-${ALMOST_VERSION}" &&
+sh install.sh &&
+export PATH="$HOME/.local/bin:$PATH" &&
+cd "$HOME" &&
+almost --version &&
 almost init
 ```
 
 Edit the generated configuration before running `almost doctor`. See the
 [first connection walkthrough](../README.md#first-connection).
 
+Finish in your home directory before using the installed `almost` command. When
+run inside an extracted archive or source checkout, Python can load that source
+instead of the installed package. Use `python3 -m almost` when deliberately
+running source.
+
 The installer copies the package into a private virtual environment. You can
 remove the extracted download afterward. It refuses to replace an executable
 named `almost` unless that file is one of its own launchers.
 
-For a custom installation prefix:
+For a custom installation prefix, replace the `sh install.sh` and `export PATH`
+lines in the source-install example with:
 
 ```sh
 sh install.sh --prefix "$HOME/tools"
@@ -94,30 +121,45 @@ the intended version (`command -v almost`).
 With [pipx installed](https://pipx.pypa.io/stable/installation/):
 
 ```sh
-pipx install --python python3 'https://github.com/azizbekphd/almost/releases/download/v0.2.0/almost_cli-0.2.0-py3-none-any.whl'
+ALMOST_VERSION=$(curl -fsSL https://api.github.com/repos/azizbekphd/almost/releases/latest |
+  python3 -c 'import json, sys; print(json.load(sys.stdin)["tag_name"].removeprefix("v"))') &&
+pipx install --python python3 "https://github.com/azizbekphd/almost/releases/download/v${ALMOST_VERSION}/almost_cli-${ALMOST_VERSION}-py3-none-any.whl" &&
 pipx ensurepath
 ```
 
 Open a new terminal if PATH changes do not take effect. For a normal virtual
-environment, download the wheel from the release, verify its checksum as above
-using the wheel filename, and install the local file:
+environment, download the wheel and `SHA256SUMS` from the same release:
 
 ```sh
-python3 -m venv "$HOME/.venvs/almost"
-"$HOME/.venvs/almost/bin/python" -m pip install --no-index --no-deps ./almost_cli-0.2.0-py3-none-any.whl
+ALMOST_VERSION=$(curl -fsSL https://api.github.com/repos/azizbekphd/almost/releases/latest |
+  python3 -c 'import json, sys; print(json.load(sys.stdin)["tag_name"].removeprefix("v"))') &&
+ALMOST_ARCHIVE="almost_cli-${ALMOST_VERSION}-py3-none-any.whl" &&
+ALMOST_RELEASE_URL="https://github.com/azizbekphd/almost/releases/download/v${ALMOST_VERSION}" &&
+curl -fL -o "$ALMOST_ARCHIVE" "$ALMOST_RELEASE_URL/$ALMOST_ARCHIVE" &&
+curl -fL -o SHA256SUMS "$ALMOST_RELEASE_URL/SHA256SUMS"
+```
+
+Use the checksum commands above with this wheel's `ALMOST_ARCHIVE`, then install
+the verified local file:
+
+```sh
+python3 -m venv "$HOME/.venvs/almost" &&
+"$HOME/.venvs/almost/bin/python" -m pip install --no-index --no-deps "./almost_cli-${ALMOST_VERSION}-py3-none-any.whl" &&
 "$HOME/.venvs/almost/bin/almost" --version
 ```
 
 The wheel has no runtime dependencies. Its platform-neutral filename describes
-the Python packaging format; the utility still requires macOS or Linux.
+the Python packaging format; the utility still requires macOS, Linux, or Termux.
 GitHub Releases is the supported distribution channel; these instructions do
 not depend on the availability of an `almost-cli` package on PyPI.
 
 ## Run from source
 
 ```sh
-git clone --branch v0.2.0 --depth 1 https://github.com/azizbekphd/almost.git
-cd almost
+ALMOST_VERSION=$(curl -fsSL https://api.github.com/repos/azizbekphd/almost/releases/latest |
+  python3 -c 'import json, sys; print(json.load(sys.stdin)["tag_name"].removeprefix("v"))') &&
+git clone --branch "v${ALMOST_VERSION}" --depth 1 https://github.com/azizbekphd/almost.git &&
+cd almost &&
 python3 -m almost init
 ```
 
@@ -126,16 +168,23 @@ After editing the configuration, run `python3 -m almost doctor` and
 
 ## Upgrade
 
+### With `almost update`
+
+`almost update` is available in offline installations starting with 0.2.0. If
+your copy lacks that command, use [older-version steps](#older-versions-without-update)
+instead.
+
 Stop every running profile before replacing installed files:
 
 ```sh
-almost stop work
-almost stop staging  # If this profile is running.
+almost stop  # Default profile, if running.
+almost stop staging  # Any other running profile; use its actual name.
 ```
 
-For installations made with the offline installer, run this from any directory:
+For installations made with the offline installer, run from your home directory:
 
 ```sh
+cd "$HOME" &&
 almost update
 ```
 
@@ -145,10 +194,6 @@ requires no pip or additional Python packages. If your version is already
 current, it leaves the installation alone. Active supervisors must be stopped
 first; the updater reports an error if one is still running. Installation stages
 the replacement package and restores the old package if the new CLI fails to start.
-
-Older versions without the `update` command need one installation of updated
-source using `sh install.sh` with the same prefix to gain this command. You can
-still download and extract releases manually and run their offline installer.
 
 To install an unreleased fix from an updated checkout, or use already downloaded
 and extracted source without network access:
@@ -167,6 +212,53 @@ Replace versions in download URLs and filenames with the desired release.
 
 Check `almost --version`, run `almost doctor`, and reconnect. Configuration
 and remote tmux sessions are preserved. Existing custom profiles remain valid.
+
+### Older versions without `update`
+
+If `almost update` reports an unknown command, install the latest source release
+once using the commands below. Your configuration and state are preserved; you
+do not need to run `almost init` again. Use your original `--prefix` if it was
+customized.
+
+If a foreground command is still running, press Ctrl-C first. Stop any working
+profiles before installing. When an older Termux copy fails with permission
+denied for `/tmp/almost-UID`, that failure happens before it starts a supervisor;
+you can run these commands directly without `almost doctor`, `almost`, or
+`almost stop` for that failed attempt.
+
+```sh
+ALMOST_VERSION=$(curl -fsSL https://api.github.com/repos/azizbekphd/almost/releases/latest |
+  python3 -c 'import json, sys; print(json.load(sys.stdin)["tag_name"].removeprefix("v"))') &&
+curl -fL -o "almost_cli-${ALMOST_VERSION}.tar.gz" "https://github.com/azizbekphd/almost/releases/download/v${ALMOST_VERSION}/almost_cli-${ALMOST_VERSION}.tar.gz" &&
+tar -xzf "almost_cli-${ALMOST_VERSION}.tar.gz" &&
+cd "almost_cli-${ALMOST_VERSION}" &&
+sh install.sh &&
+export PATH="$HOME/.local/bin:$PATH" &&
+cd "$HOME" &&
+almost --version
+```
+
+For checksum verification, use the [download and verification steps](#download-and-verify-a-release)
+before extracting. For a custom installation, replace `sh install.sh` with
+`sh install.sh --prefix /your/original/prefix` and add that prefix's `bin` to PATH.
+
+Then check your existing configuration and connect:
+
+```sh
+almost doctor
+almost
+```
+
+Future upgrades use `almost update`, after stopping any running profiles. For a
+default profile:
+
+```sh
+cd "$HOME" &&
+almost stop &&
+almost update &&
+almost doctor &&
+almost
+```
 
 ## Uninstall
 

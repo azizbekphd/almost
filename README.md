@@ -19,7 +19,7 @@ services. Your local tmux configuration stays as it is.
 
 | Where | Requirements |
 | --- | --- |
-| Local computer | macOS or Linux, Python 3.11+, OpenSSH (`ssh`) |
+| Local computer | macOS, Linux, or Termux on Android; Python 3.11+, OpenSSH (`ssh`) |
 | Remote server | SSH access, tmux 3.2+, `sh`, `base64`, `tr` |
 | Authentication | A verified server host key and non-interactive SSH authentication, usually an unlocked key in your SSH agent |
 
@@ -29,25 +29,39 @@ Python is required only locally.
 
 ## Install
 
-Download the versioned source archive and run its offline installer:
+On Termux, install prerequisites first:
 
 ```sh
-curl -fL -o almost_cli-0.2.0.tar.gz https://github.com/azizbekphd/almost/releases/download/v0.2.0/almost_cli-0.2.0.tar.gz
-tar -xzf almost_cli-0.2.0.tar.gz
-cd almost_cli-0.2.0
-sh install.sh
-export PATH="$HOME/.local/bin:$PATH"
+pkg install python openssh curl tar
+```
+
+Download the latest stable source archive and run its offline installer. These
+commands discover the release version automatically:
+
+```sh
+ALMOST_VERSION=$(curl -fsSL https://api.github.com/repos/azizbekphd/almost/releases/latest |
+  python3 -c 'import json, sys; print(json.load(sys.stdin)["tag_name"].removeprefix("v"))') &&
+curl -fL -o "almost_cli-${ALMOST_VERSION}.tar.gz" "https://github.com/azizbekphd/almost/releases/download/v${ALMOST_VERSION}/almost_cli-${ALMOST_VERSION}.tar.gz" &&
+tar -xzf "almost_cli-${ALMOST_VERSION}.tar.gz" &&
+cd "almost_cli-${ALMOST_VERSION}" &&
+sh install.sh &&
+export PATH="$HOME/.local/bin:$PATH" &&
+cd "$HOME" &&
 almost --version
 ```
 
 The installer creates `~/.local/share/almost/venv` and `~/.local/bin/almost`
 without pip, downloads, or administrator access. Add the PATH line to `~/.zshrc`
 or `~/.bashrc` if needed. Python's standard library `venv` module is required.
+The commands finish in your home directory so subsequent `almost` commands use
+the installed copy. Use `python3 -m almost` when deliberately running source.
 
 If you already use [pipx](https://pipx.pypa.io), install the release wheel instead:
 
 ```sh
-pipx install 'https://github.com/azizbekphd/almost/releases/download/v0.2.0/almost_cli-0.2.0-py3-none-any.whl'
+ALMOST_VERSION=$(curl -fsSL https://api.github.com/repos/azizbekphd/almost/releases/latest |
+  python3 -c 'import json, sys; print(json.load(sys.stdin)["tag_name"].removeprefix("v"))') &&
+pipx install "https://github.com/azizbekphd/almost/releases/download/v${ALMOST_VERSION}/almost_cli-${ALMOST_VERSION}-py3-none-any.whl" &&
 pipx ensurepath
 ```
 
@@ -55,6 +69,30 @@ The package is named `almost-cli`; its command is `almost`. Packages are
 available through [GitHub Releases](https://github.com/azizbekphd/almost/releases)
 with SHA-256 checksums. See [installation options](docs/installation.md) for
 prerequisites, checksum verification, custom locations, upgrades, and removal.
+
+## Upgrade
+
+For an offline installation with `almost update`, stop your running profiles and
+update from your home directory. For the default profile:
+
+```sh
+cd "$HOME" &&
+almost stop &&
+almost update &&
+almost doctor &&
+almost
+```
+
+Stop any other running profiles too, using `almost stop PROFILE` with their
+configuration paths if needed. Your configuration and remote tmux sessions are
+preserved.
+
+If your copy has no `update` command, repeat the source-install commands above
+once, using the same installation prefix. This also recovers older Termux copies
+that fail with permission denied for `/tmp/almost-UID`; that failed startup did
+not start a supervisor, so you can install directly without `almost stop` for
+that attempt. See the [complete older-version upgrade steps](docs/installation.md#older-versions-without-update).
+After that installation, use `almost update` for future releases.
 
 ## First connection
 

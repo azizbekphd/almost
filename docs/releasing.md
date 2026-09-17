@@ -6,8 +6,8 @@ configuration format's `version = 1`. During 0.x, describe any breaking changes
 in the changelog before publishing a minor release.
 
 1. Update `__version__`, add a dated `## [VERSION] - YYYY-MM-DD` entry in
-   `CHANGELOG.md`, and update versioned download examples in the README and
-   installation guide. Add the changelog's release link.
+   `CHANGELOG.md`, and add the changelog's release link. Installation examples
+   discover the latest stable release automatically.
 2. Run tests and build clean artifacts in a development virtual environment:
 
    ```sh
@@ -18,10 +18,11 @@ in the changelog before publishing a minor release.
    .venv/bin/python -m build
    .venv/bin/python -m twine check dist/*
    .venv/bin/python scripts/check_dist.py
-   .venv/bin/python scripts/release.py --tag v0.2.0 --notes /tmp/almost-release-notes.md
+   ALMOST_VERSION=$(.venv/bin/python -c 'from almost import __version__; print(__version__)')
+   .venv/bin/python scripts/release.py --tag "v${ALMOST_VERSION}" --notes "${TMPDIR:-.}/almost-release-notes.md"
    ```
 
-   Replace the example tag with the new version. The package checker installs
+   The tag is read from the source version. The package checker installs
    the wheel and extracted source away from the checkout, including paths with
    spaces. The release script rejects mismatched tags, missing changelog entries,
    and stale artifacts from other versions.
@@ -30,8 +31,9 @@ in the changelog before publishing a minor release.
    on that tested commit and push it:
 
    ```sh
-   git tag -a v0.2.0 -m 'almost 0.2.0'
-   git push origin v0.2.0
+   ALMOST_VERSION=$(python3 -c 'from almost import __version__; print(__version__)')
+   git tag -a "v${ALMOST_VERSION}" -m "almost ${ALMOST_VERSION}"
+   git push origin "v${ALMOST_VERSION}"
    ```
 
 4. The release workflow runs the same macOS/Linux checks on the tag, builds and
