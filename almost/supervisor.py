@@ -147,7 +147,7 @@ class Supervisor:
 
     def start_child(self) -> None:
         self.diagnostics.clear()
-        self.master = self.runtime.directory / f"ssh-{uuid.uuid4().hex}.sock"
+        self.master = self.runtime.new_ssh_socket()
         self.state["attempts"] += 1
         self.update("connecting", connected_since=None, retry_at=None)
         args = ssh.base(self.profile, master=self.master) + ["-N", self.profile.host]

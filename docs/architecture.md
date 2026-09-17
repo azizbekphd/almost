@@ -15,7 +15,10 @@ the next attachment replaces the old hooks. Existing hooks and tmux configuratio
 files are preserved.
 
 Private state and rotating diagnostic logs live under `~/.local/state/almost`.
-Control sockets live under `/tmp/almost-UID` to fit macOS socket path limits.
+Control sockets live under `/tmp/almost-UID` on macOS to fit its socket path
+limits. Linux and Termux use the system temporary directory, honoring `$TMPDIR`.
+Long temporary paths use a compact per-profile directory and shorter SSH socket
+names, with room reserved for OpenSSH's temporary socket suffix.
 Directories use mode 0700 and state files use 0600. Stale PIDs are never used to
 kill processes. After a supervisor crash, `almost up` or `almost stop` reclaims
 only SSH masters in the app's own private socket directory.

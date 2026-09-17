@@ -81,6 +81,13 @@ Unix sockets. Sandboxes blocking local sockets cannot run the supervisor.
 `almost stop PROFILE` reclaims only SSH masters in the utility's own socket
 directory. Avoid manually killing PIDs copied from old state files.
 
+## Permission denied for `/tmp/almost-UID` in Termux
+
+Older versions hard-code `/tmp`, which Termux cannot write to. Install a version
+containing the Termux temporary-directory fix. `almost` then uses Termux's
+`$TMPDIR` and compact socket paths. Changing `$TMPDIR` alone does not fix an
+older version. See [installation](installation.md) for upgrading.
+
 ## Reporting a bug
 
 Use [GitHub Issues](https://github.com/azizbekphd/almost/issues) with reproduction

@@ -71,7 +71,14 @@ local forwards to the TOML file instead.
 | --- | --- |
 | Configuration | `~/.config/almost/config.toml`, or `$XDG_CONFIG_HOME/almost/config.toml` |
 | Private state and logs | `~/.local/state/almost`, or `$XDG_STATE_HOME/almost` |
-| Private control and SSH sockets | `/tmp/almost-UID` |
+| Private control and SSH sockets | `/tmp/almost-UID` on macOS; the system temporary directory (honoring `$TMPDIR`) on Linux and Termux |
+
+Socket directories normally use `almost-UID/SCOPE` under the temporary directory.
+Longer temporary paths, such as Termux's `$TMPDIR`, use `a-SCOPE` directly under
+that directory to fit Unix socket path limits. These directories remain private
+to your user. Stop running profiles before changing `$TMPDIR`, and use the same
+value for subsequent commands. If the path is still too long, `almost` asks you
+to choose a shorter writable absolute `$TMPDIR`.
 
 Use absolute paths for XDG variables. Select a custom configuration with the
 global option before the command:

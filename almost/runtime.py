@@ -6,6 +6,7 @@ import json
 import os
 import socket
 import stat
+import sys
 import tempfile
 import time
 import uuid
@@ -16,6 +17,9 @@ from typing import Any
 from .config import AlmostError, Config, Profile, state_root
 
 
+SSH_SOCKET_ID_LENGTH = 16
+
+
 def private_dir(path: Path) -> Path:
     path.mkdir(mode=0o700, parents=True, exist_ok=True)
     info = path.lstat()
@@ -24,6 +28,24 @@ def private_dir(path: Path) -> Path:
     if stat.S_IMODE(info.st_mode) != 0o700:
         path.chmod(0o700)
     return path
+
+
+def socket_directory(scope: str) -> Path:
+    # macOS's TMPDIR is too long for Unix sockets. Other platforms, including
+    # Termux, need their writable temporary directory instead of a fixed /tmp.
+    temporary = Path("/tmp") if sys.platform == "darwin" else Path(tempfile.gettempdir())
+    limit = 104 if sys.platform == "darwin" else 108
+    # OpenSSH appends a dot and 16 random characters while creating its socket.
+    longest_name = f"ssh-{'0' * SSH_SOCKET_ID_LENGTH}.sock.{'0' * 16}"
+    directory = temporary / f"almost-{os.getuid()}" / scope
+    if len(os.fsencode(directory / longest_name)) >= limit:
+        directory = temporary / f"a-{scope}"
+    if len(os.fsencode(directory / longest_name)) >= limit:
+        raise AlmostError(f"Temporary directory is too long for Unix sockets: {temporary}. "
+                          "Set TMPDIR to a shorter writable absolute path.")
+    if directory.parent != temporary:
+        private_dir(directory.parent)
+    return private_dir(directory)
 
 
 def secure_open(path: Path, flags: int) -> int:
@@ -100,13 +122,14 @@ class Runtime:
         finally:
             identity_lock.close()
         scope = hashlib.sha256(f"{identity}\0{config.path}\0{profile.name}".encode()).hexdigest()[:24]
-        # macOS Unix sockets have a short pathname limit; avoid its long TMPDIR.
-        parent = private_dir(Path("/tmp") / f"almost-{os.getuid()}")
-        return cls(scope, private_dir(parent / scope), private_dir(root / scope))
+        return cls(scope, socket_directory(scope), private_dir(root / scope))
 
     @property
     def socket(self) -> Path:
         return self.directory / "control.sock"
+
+    def new_ssh_socket(self) -> Path:
+        return self.directory / f"ssh-{uuid.uuid4().hex[:SSH_SOCKET_ID_LENGTH]}.sock"
 
     @property
     def log(self) -> Path:

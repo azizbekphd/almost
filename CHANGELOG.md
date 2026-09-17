@@ -4,6 +4,12 @@ Release versions follow `MAJOR.MINOR.PATCH`; the configuration format has its ow
 `version = 1`. During 0.x, minor releases may introduce breaking changes,
 which will be described here.
 
+## [Unreleased]
+
+- Fix Termux startup failing with permission denied for `/tmp/almost-UID` by
+  honoring the system temporary directory outside macOS. Compact socket paths
+  also accommodate Termux's longer temporary directory and OpenSSH's suffix.
+
 ## [0.1.0] - 2026-09-16
 
 Initial public release.
