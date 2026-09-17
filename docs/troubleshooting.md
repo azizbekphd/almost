@@ -83,18 +83,10 @@ directory. Avoid manually killing PIDs copied from old state files.
 
 ## Permission denied for `/tmp/almost-UID` in Termux
 
-Older versions hard-code `/tmp`, which Termux cannot write to. Follow the
-[older-version upgrade commands](installation.md#older-versions-without-update)
-to install the latest release once. That startup error occurs before a supervisor
-starts, so the recovery does not require a working `almost doctor`, `almost`, or
-`almost stop` for the failed attempt. Keep your existing configuration.
-
-After installing, run `cd "$HOME"` before using `almost` so Python loads the
-installed package, including when an old source checkout remains on disk.
-
-The updated copy uses Termux's `$TMPDIR` and compact socket paths. Changing
-`$TMPDIR` alone does not fix an older version. Future releases can be installed
-with `almost update`, after stopping running profiles.
+Older versions hard-code `/tmp`, which Termux cannot write to. Install a version
+containing the Termux temporary-directory fix. `almost` then uses Termux's
+`$TMPDIR` and compact socket paths. Changing `$TMPDIR` alone does not fix an
+older version. See [installation](installation.md) for upgrading.
 
 ## Reporting a bug
 
