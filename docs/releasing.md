@@ -18,7 +18,7 @@ in the changelog before publishing a minor release.
    .venv/bin/python -m build
    .venv/bin/python -m twine check dist/*
    .venv/bin/python scripts/check_dist.py
-   .venv/bin/python scripts/release.py --tag v0.1.0 --notes /tmp/almost-release-notes.md
+   .venv/bin/python scripts/release.py --tag v0.2.0 --notes /tmp/almost-release-notes.md
    ```
 
    Replace the example tag with the new version. The package checker installs
@@ -30,8 +30,8 @@ in the changelog before publishing a minor release.
    on that tested commit and push it:
 
    ```sh
-   git tag -a v0.1.0 -m 'almost 0.1.0'
-   git push origin v0.1.0
+   git tag -a v0.2.0 -m 'almost 0.2.0'
+   git push origin v0.2.0
    ```
 
 4. The release workflow runs the same macOS/Linux checks on the tag, builds and

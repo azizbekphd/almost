@@ -43,28 +43,28 @@ It does not need Python or an installation of `almost`.
 Download the source archive and checksums from the same tagged release:
 
 ```sh
-curl -fL -o almost_cli-0.1.0.tar.gz https://github.com/azizbekphd/almost/releases/download/v0.1.0/almost_cli-0.1.0.tar.gz
-curl -fL -o SHA256SUMS https://github.com/azizbekphd/almost/releases/download/v0.1.0/SHA256SUMS
+curl -fL -o almost_cli-0.2.0.tar.gz https://github.com/azizbekphd/almost/releases/download/v0.2.0/almost_cli-0.2.0.tar.gz
+curl -fL -o SHA256SUMS https://github.com/azizbekphd/almost/releases/download/v0.2.0/SHA256SUMS
 ```
 
 Verify the archive on macOS:
 
 ```sh
-awk '$2 == "almost_cli-0.1.0.tar.gz"' SHA256SUMS | shasum -a 256 -c -
+awk '$2 == "almost_cli-0.2.0.tar.gz"' SHA256SUMS | shasum -a 256 -c -
 ```
 
 Or on Linux:
 
 ```sh
-awk '$2 == "almost_cli-0.1.0.tar.gz"' SHA256SUMS | sha256sum -c -
+awk '$2 == "almost_cli-0.2.0.tar.gz"' SHA256SUMS | sha256sum -c -
 ```
 
 The result should say `OK`. Checksums detect download corruption; they are not
 independent signatures. Then extract and install:
 
 ```sh
-tar -xzf almost_cli-0.1.0.tar.gz
-cd almost_cli-0.1.0
+tar -xzf almost_cli-0.2.0.tar.gz
+cd almost_cli-0.2.0
 sh install.sh
 export PATH="$HOME/.local/bin:$PATH"
 almost --version
@@ -94,7 +94,7 @@ the intended version (`command -v almost`).
 With [pipx installed](https://pipx.pypa.io/stable/installation/):
 
 ```sh
-pipx install --python python3 'https://github.com/azizbekphd/almost/releases/download/v0.1.0/almost_cli-0.1.0-py3-none-any.whl'
+pipx install --python python3 'https://github.com/azizbekphd/almost/releases/download/v0.2.0/almost_cli-0.2.0-py3-none-any.whl'
 pipx ensurepath
 ```
 
@@ -104,7 +104,7 @@ using the wheel filename, and install the local file:
 
 ```sh
 python3 -m venv "$HOME/.venvs/almost"
-"$HOME/.venvs/almost/bin/python" -m pip install --no-index --no-deps ./almost_cli-0.1.0-py3-none-any.whl
+"$HOME/.venvs/almost/bin/python" -m pip install --no-index --no-deps ./almost_cli-0.2.0-py3-none-any.whl
 "$HOME/.venvs/almost/bin/almost" --version
 ```
 
@@ -116,7 +116,7 @@ not depend on the availability of an `almost-cli` package on PyPI.
 ## Run from source
 
 ```sh
-git clone --branch v0.1.0 --depth 1 https://github.com/azizbekphd/almost.git
+git clone --branch v0.2.0 --depth 1 https://github.com/azizbekphd/almost.git
 cd almost
 python3 -m almost init
 ```

@@ -32,9 +32,9 @@ Python is required only locally.
 Download the versioned source archive and run its offline installer:
 
 ```sh
-curl -fL -o almost_cli-0.1.0.tar.gz https://github.com/azizbekphd/almost/releases/download/v0.1.0/almost_cli-0.1.0.tar.gz
-tar -xzf almost_cli-0.1.0.tar.gz
-cd almost_cli-0.1.0
+curl -fL -o almost_cli-0.2.0.tar.gz https://github.com/azizbekphd/almost/releases/download/v0.2.0/almost_cli-0.2.0.tar.gz
+tar -xzf almost_cli-0.2.0.tar.gz
+cd almost_cli-0.2.0
 sh install.sh
 export PATH="$HOME/.local/bin:$PATH"
 almost --version
@@ -47,7 +47,7 @@ or `~/.bashrc` if needed. Python's standard library `venv` module is required.
 If you already use [pipx](https://pipx.pypa.io), install the release wheel instead:
 
 ```sh
-pipx install 'https://github.com/azizbekphd/almost/releases/download/v0.1.0/almost_cli-0.1.0-py3-none-any.whl'
+pipx install 'https://github.com/azizbekphd/almost/releases/download/v0.2.0/almost_cli-0.2.0-py3-none-any.whl'
 pipx ensurepath
 ```
 
