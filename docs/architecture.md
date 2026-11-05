@@ -3,8 +3,18 @@
 The CLI launches a detached supervisor with a private Unix control socket and
 an exclusive per-profile lock. The supervisor owns one OpenSSH master and adds
 only the configured forwards through that master's control socket. A separate
-foreground SSH process inherits your terminal directly; there is no terminal
-emulator or keystroke logger in the app.
+foreground SSH process inherits terminal input directly. When a local clipboard
+tool is available, its output is relayed through a bounded OSC 52 parser that
+sends tmux copies to the local clipboard and passes other output through.
+Otherwise SSH inherits terminal output directly. There is no terminal emulator
+or keystroke logger in the app.
+
+The clipboard handler advertises clipboard support for the managed tmux client
+with `-T clipboard`. If the remote server has `set-clipboard off`, attachment
+enables `external` at runtime; an existing `on` setting is kept. Clipboard tools
+run only locally, and no tmux configuration file or copy binding is changed.
+Malformed, oversized, or unsuccessful clipboard messages pass through to the
+terminal. Clipboard contents are not included in diagnostics or state files.
 
 Two additive runtime tmux hooks remember the tracked client's session ID. IDs
 survive renames; the memory disappears with the tmux server, preventing reused

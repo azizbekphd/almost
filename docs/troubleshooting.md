@@ -59,6 +59,33 @@ restart application clients after network recovery when necessary.
 server and make it available to non-interactive SSH commands. If your sessions
 use `tmux -L NAME`, configure `tmux_socket` with that same name.
 
+## Copying from tmux does not reach the local clipboard
+
+Reconnect using the updated `almost` command. It detects a local clipboard tool
+when connecting and transfers copies from remote tmux to that tool:
+
+- macOS: the built-in `pbcopy`.
+- Wayland: `wl-copy` from `wl-clipboard`, with `WAYLAND_DISPLAY` set.
+- X11: `xclip` or `xsel`, with `DISPLAY` set.
+- Termux: `termux-clipboard-set`, with Termux:API installed and working.
+
+Install these tools on your local computer. A remote `pbcopy`, `xclip`, or
+`xsel` command targets the server's clipboard, rather than your computer's.
+
+Enter tmux copy mode with Ctrl-B then `[`. With the default emacs mode keys,
+start a selection with Ctrl-Space and copy with Alt-W. With vi mode keys, use
+Space then Enter. Mouse copying requires tmux mouse mode; enable it for the
+running server with `tmux set -g mouse on` if desired. Existing copy bindings
+and clipboard commands are preserved.
+
+When a local tool is available, `almost` supplies clipboard support for its
+tmux client and changes a running server's `set-clipboard off` to `external`.
+An existing `on` setting is preserved. This changes runtime options only;
+`.tmux.conf` is not edited. Copies up to an 8 MiB encoded OSC 52 message are
+handled locally. Larger copies, failed local clipboard commands, and connections
+without a local tool fall back to the terminal's OSC 52 clipboard support,
+which must be supported and enabled in the terminal.
+
 ## Session disappeared or window changed
 
 If the remembered session disappears, the chooser opens again. With no sessions,

@@ -5,7 +5,9 @@ import tempfile
 import unittest
 import uuid
 from pathlib import Path
+from unittest.mock import patch
 
+from almost.clipboard import Clipboard
 from almost.config import Profile
 from almost.remote import attach_script, snapshot_script, parse_snapshot, create_script, cleanup_script
 from tests.support import Terminal, wait_for
@@ -35,9 +37,10 @@ class TmuxTests(unittest.TestCase):
         value = subprocess.run(["sh", "-c", snapshot_script(self.profile, self.scope)], capture_output=True, text=True, check=True)
         return parse_snapshot(value.stdout)
 
-    def attach(self, session):
+    def attach(self, session, *, clipboard=False, term="xterm-256color"):
         attempt = uuid.uuid4().hex
-        terminal = Terminal(["sh", "-c", attach_script(self.profile, self.scope, session, attempt)])
+        terminal = Terminal(["sh", "-c", attach_script(self.profile, self.scope, session, attempt,
+                                                     clipboard=clipboard)], term=term)
         self.terminals.append(terminal)
         terminal.wait_for(lambda: self.snapshot().attempt == attempt)
         return terminal
@@ -80,6 +83,72 @@ class TmuxTests(unittest.TestCase):
         self.assertIn(self.scope, self.tm("show-hooks", "-g"))
         self.tm("detach-client", "-t", own_name)
         self.assertEqual(owned.wait_exit(), 0)
+
+    def test_copy_mode_reaches_local_clipboard_without_terminal_support(self):
+        self.tm("set-option", "-s", "set-clipboard", "off")
+        features = self.tm("show-options", "-s", "terminal-features")
+        self.tm("set-option", "-s", "copy-command", "cat >/dev/null")
+        terminal = self.attach("$0", clipboard=True, term="vt100")
+        self.assertEqual(self.tm("show-options", "-sv", "set-clipboard"), "external")
+        self.assertEqual(self.tm("show-options", "-s", "terminal-features"), features)
+        self.assertEqual(self.tm("show-options", "-sv", "copy-command"), "cat >/dev/null")
+        for mode, key in (("emacs", b"\x17"), ("vi", b"\r")):
+            with self.subTest(mode=mode):
+                text = "clipboard selection " + mode
+                self.tm("set-option", "-w", "-t", "$0", "mode-keys", mode)
+                self.tm("respawn-pane", "-k", "-t", "$0", "printf '" + text + "\\n'; sleep 60")
+                terminal.wait_for(lambda: self.tm("capture-pane", "-p", "-t", "$0").startswith(text))
+                self.tm("copy-mode", "-t", "$0")
+                for command in ("history-top", "start-of-line", "begin-selection", "end-of-line"):
+                    self.tm("send-keys", "-X", "-t", "$0", command)
+                terminal.send(key)
+                terminal.wait_for(lambda: self.tm("show-buffer") == text)
+                expected = (text + ("\n" if mode == "vi" else "")).encode()
+                with patch("almost.clipboard.subprocess.run") as copy:
+                    clipboard = Clipboard(["local-clipboard"])
+                    offset = 0
+
+                    def copied():
+                        nonlocal offset
+                        clipboard.feed(bytes(terminal.output[offset:]))
+                        offset = len(terminal.output)
+                        return any(call.kwargs["input"] == expected for call in copy.call_args_list)
+
+                    terminal.wait_for(copied)
+        self.tm("detach-client", "-t", self.client())
+        self.assertEqual(terminal.wait_exit(), 0)
+
+    def test_clipboard_setup_preserves_enabled_settings_and_is_optional(self):
+        for setting, enabled in (("on", True), ("external", True), ("off", False)):
+            with self.subTest(setting=setting, enabled=enabled):
+                self.tm("set-option", "-s", "set-clipboard", setting)
+                terminal = self.attach("$0", clipboard=enabled)
+                self.assertEqual(self.tm("show-options", "-sv", "set-clipboard"), setting)
+                self.tm("detach-client", "-t", self.client())
+                self.assertEqual(terminal.wait_exit(), 0)
+
+    def test_mouse_selection_exports_clipboard(self):
+        self.tm("set-option", "-g", "mouse", "on")
+        terminal = self.attach("$0", clipboard=True)
+        text = "mouse selection"
+        self.tm("respawn-pane", "-k", "-t", "$0", "printf '" + text + "\\n'; sleep 60")
+        terminal.wait_for(lambda: self.tm("capture-pane", "-p", "-t", "$0").startswith(text))
+        terminal.send(b"\x1b[<0;1;1M\x1b[<32;16;1M")
+        terminal.wait_for(lambda: self.tm("display-message", "-p", "-t", "$0", "#{pane_in_mode}") == "1")
+        terminal.send(b"\x1b[<0;16;1m")
+        terminal.wait_for(lambda: self.tm("show-buffer") == text)
+        expected = subprocess.check_output(["tmux", "-L", self.socket, "save-buffer", "-"])
+        with patch("almost.clipboard.subprocess.run") as copy:
+            clipboard = Clipboard(["local-clipboard"])
+            offset = 0
+
+            def copied():
+                nonlocal offset
+                clipboard.feed(bytes(terminal.output[offset:]))
+                offset = len(terminal.output)
+                return any(call.kwargs["input"] == expected for call in copy.call_args_list)
+
+            terminal.wait_for(copied)
 
     def test_hook_collision_and_deleted_session(self):
         index = 1_000_000 + int(self.scope[:7], 16)

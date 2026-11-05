@@ -4,6 +4,13 @@ Release versions follow `MAJOR.MINOR.PATCH`; the configuration format has its ow
 `version = 1`. During 0.x, minor releases may introduce breaking changes,
 which will be described here.
 
+## [0.2.1] - 2026-11-05
+
+- Copy remote tmux selections to the local clipboard with macOS, Wayland, X11,
+  and Termux clipboard tools, including terminals without OSC 52 support.
+  Preserve copy bindings and configuration files, and fall back to terminal
+  clipboard support when a local tool is unavailable or fails.
+
 ## [0.2.0] - 2026-09-17
 
 - Add `almost update` to download and verify the latest stable GitHub Release
@@ -35,5 +42,6 @@ Requires macOS or Linux, local Python 3.11+ and OpenSSH, and remote tmux 3.2+.
 Native Windows is unsupported; WSL is not covered by CI. Reconnection cannot
 preserve established TCP connections or restore programs lost in a reboot.
 
+[0.2.1]: https://github.com/azizbekphd/almost/releases/tag/v0.2.1
 [0.2.0]: https://github.com/azizbekphd/almost/releases/tag/v0.2.0
 [0.1.0]: https://github.com/azizbekphd/almost/releases/tag/v0.1.0

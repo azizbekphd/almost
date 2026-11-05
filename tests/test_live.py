@@ -115,6 +115,30 @@ server.serve_forever()
         finally:
             connection.close()
 
+    def test_copy_mode_reaches_local_clipboard_over_ssh(self):
+        binaries = self.directory / "bin"
+        binaries.mkdir()
+        target = self.directory / "clipboard"
+        tool = binaries / ("pbcopy" if sys.platform == "darwin" else "termux-clipboard-set")
+        tool.write_text("#!/bin/sh\n/bin/cat > " + shlex.quote(str(target)) + "\n")
+        tool.chmod(0o700)
+        self.environment["PATH"] = str(binaries) + os.pathsep + os.environ["PATH"]
+        self.tm("set-option", "-s", "set-clipboard", "off")
+        self.tm("set-option", "-w", "-t", "alpha:0", "mode-keys", "emacs")
+        terminal = self.start_terminal("--session", "alpha")
+        terminal.wait_for(lambda: self.snapshot().attempt)
+        text = "clipboard over real SSH"
+        self.tm("respawn-pane", "-k", "-t", "alpha:0", "printf '" + text + "\\n'; sleep 60")
+        terminal.wait_for(lambda: self.tm("capture-pane", "-p", "-t", "alpha:0").startswith(text))
+        self.tm("copy-mode", "-t", "alpha:0")
+        for command in ("history-top", "start-of-line", "begin-selection", "end-of-line"):
+            self.tm("send-keys", "-X", "-t", "alpha:0", command)
+        terminal.send(b"\x17")
+        terminal.wait_for(lambda: target.is_file() and target.read_bytes() == text.encode())
+        self.assertNotIn(b"\x1b]52;", terminal.output)
+        self.tm("detach-client", "-t", self.client())
+        self.assertEqual(terminal.wait_exit(), 0)
+
     def test_end_to_end_recovery_and_lifecycle(self):
         print("\nLive check: real forwarding and supervisor recovery", flush=True)
         self.cli("up")

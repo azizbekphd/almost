@@ -13,6 +13,7 @@ import uuid
 from dataclasses import dataclass
 
 from . import remote, ssh, supervisor
+from .clipboard import Clipboard
 from .config import AlmostError, Config, Profile
 from .runtime import Lock, Runtime, request
 
@@ -92,7 +93,8 @@ class Result:
     duration: float
 
 
-def run(profile: Profile, script: str, watch: Watch, *, interactive: bool = False) -> Result:
+def run(profile: Profile, script: str, watch: Watch, *, interactive: bool = False,
+        clipboard: Clipboard | None = None) -> Result:
     watch.check()
     args = ssh.base(profile, tty=interactive) + [profile.host, remote.shell_command(script)]
     attributes = None
@@ -102,10 +104,27 @@ def run(profile: Profile, script: str, watch: Watch, *, interactive: bool = Fals
         termios.tcflush(sys.stdin.fileno(), termios.TCIFLUSH)
     started = time.monotonic()
     child = subprocess.Popen(args, stdin=None if interactive else subprocess.DEVNULL,
-                             stdout=None if interactive else subprocess.PIPE,
+                             stdout=None if interactive and clipboard is None else subprocess.PIPE,
                              stderr=subprocess.PIPE, env=ssh.environment(), close_fds=True)
     diagnostics: list[bytes] = []
-    reader: threading.Thread | None = None
+    readers: list[threading.Thread] = []
+
+    def stdout_reader() -> None:
+        assert child.stdout is not None and clipboard is not None
+
+        def write(data: bytes) -> None:
+            try:
+                sys.stdout.buffer.write(data)
+                sys.stdout.buffer.flush()
+            except (OSError, AttributeError):
+                pass
+
+        try:
+            while chunk := os.read(child.stdout.fileno(), 65536):
+                write(clipboard.feed(chunk))
+        finally:
+            write(clipboard.finish())
+            child.stdout.close()
 
     def stderr_reader() -> None:
         assert child.stderr is not None
@@ -124,12 +143,16 @@ def run(profile: Profile, script: str, watch: Watch, *, interactive: bool = Fals
 
     try:
         if interactive:
-            reader = threading.Thread(target=stderr_reader, daemon=True)
-            reader.start()
+            readers.append(threading.Thread(target=stderr_reader, daemon=True))
+            if clipboard is not None:
+                readers.append(threading.Thread(target=stdout_reader, daemon=True))
+            for reader in readers:
+                reader.start()
             while child.poll() is None:
                 watch.check()
                 time.sleep(0.1)
-            reader.join(timeout=1)
+            for reader in readers:
+                reader.join(timeout=3)
             output, error = b"", b"".join(diagnostics)
         else:
             while True:
@@ -146,8 +169,9 @@ def run(profile: Profile, script: str, watch: Watch, *, interactive: bool = Fals
                       error.decode("utf-8", "replace"), time.monotonic() - started)
     finally:
         ssh.terminate(child)
-        if reader:
-            reader.join(timeout=1)
+        if readers:
+            for reader in readers:
+                reader.join(timeout=3)
         else:
             if child.stdout:
                 child.stdout.close()
@@ -309,8 +333,10 @@ def connection_loop(profile: Profile, runtime: Runtime, watch: Watch, requested:
         assert selected is not None
         last_attempt = uuid.uuid4().hex
         watch.attempt = last_attempt
-        attached = run(profile, remote.attach_script(profile, runtime.scope, selected.id, last_attempt, server_marker),
-                       watch, interactive=True)
+        clipboard = Clipboard.detect()
+        attached = run(profile, remote.attach_script(profile, runtime.scope, selected.id, last_attempt, server_marker,
+                                                    clipboard=clipboard is not None),
+                       watch, interactive=True, clipboard=clipboard)
         if attached.code == 0:
             print("Detached. Tunnels continue in the background; use 'almost stop' to stop them.")
             return 0

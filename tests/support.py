@@ -11,7 +11,7 @@ import time
 
 class Terminal:
     """A bounded, drained pseudo-terminal for exercising the actual CLI."""
-    def __init__(self, args, env=None):
+    def __init__(self, args, env=None, term="xterm-256color"):
         self.master, slave = pty.openpty()
         self.output = bytearray()
 
@@ -20,7 +20,7 @@ class Terminal:
             fcntl.ioctl(0, termios.TIOCSCTTY, 0)
 
         environment = dict(os.environ if env is None else env)
-        environment["TERM"] = "xterm-256color"
+        environment["TERM"] = term
         self.child = subprocess.Popen(args, stdin=slave, stdout=slave, stderr=slave,
                                       env=environment, preexec_fn=setup, close_fds=True)
         os.close(slave)

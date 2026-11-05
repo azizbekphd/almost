@@ -32,9 +32,9 @@ Python is required only locally.
 Download the versioned source archive and run its offline installer:
 
 ```sh
-curl -fL -o almost_cli-0.2.0.tar.gz https://github.com/azizbekphd/almost/releases/download/v0.2.0/almost_cli-0.2.0.tar.gz
-tar -xzf almost_cli-0.2.0.tar.gz
-cd almost_cli-0.2.0
+curl -fL -o almost_cli-0.2.1.tar.gz https://github.com/azizbekphd/almost/releases/download/v0.2.1/almost_cli-0.2.1.tar.gz
+tar -xzf almost_cli-0.2.1.tar.gz
+cd almost_cli-0.2.1
 sh install.sh
 export PATH="$HOME/.local/bin:$PATH"
 almost --version
@@ -47,7 +47,7 @@ or `~/.bashrc` if needed. Python's standard library `venv` module is required.
 If you already use [pipx](https://pipx.pypa.io), install the release wheel instead:
 
 ```sh
-pipx install 'https://github.com/azizbekphd/almost/releases/download/v0.2.0/almost_cli-0.2.0-py3-none-any.whl'
+pipx install 'https://github.com/azizbekphd/almost/releases/download/v0.2.1/almost_cli-0.2.1-py3-none-any.whl'
 pipx ensurepath
 ```
 
@@ -138,6 +138,13 @@ interactive connection while background tunnels keep running. `almost stop`
 preserves remote tmux sessions and their programs. One managed interactive
 client is allowed per profile; ordinary SSH/tmux clients can coexist.
 The utility does not start at login: run it again after restarting your computer.
+
+Copies made in remote tmux copy mode also reach your local system clipboard,
+including mouse selections when tmux mouse mode is enabled. `almost` uses
+`pbcopy` on macOS, `wl-copy` on Wayland, `xclip` or `xsel` on X11, or
+`termux-clipboard-set` on Termux. These tools run locally; no remote clipboard
+package is needed. Without a local tool, copying uses your terminal's existing
+clipboard support. See [clipboard troubleshooting](docs/troubleshooting.md#copying-from-tmux-does-not-reach-the-local-clipboard).
 
 ## Configuration and recovery
 

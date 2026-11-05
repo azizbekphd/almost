@@ -126,7 +126,8 @@ tm if-shell -F '#{{==:#{{{key}-generation}},{attempt}}}' "$commands"
 '''
 
 
-def attach_script(profile: Profile, scope: str, session_id: str, attempt: str, server: str | None = None) -> str:
+def attach_script(profile: Profile, scope: str, session_id: str, attempt: str, server: str | None = None,
+                  *, clipboard: bool = False) -> str:
     key = key_prefix(scope)
     if not re.fullmatch(r"\$[0-9]+", session_id) or not re.fullmatch(r"[a-f0-9]{32}", attempt):
         raise ValueError("Invalid attachment identity")
@@ -134,6 +135,14 @@ def attach_script(profile: Profile, scope: str, session_id: str, attempt: str, s
         raise ValueError("Invalid server identity")
     server_check = (f'''[ "$(tm display-message -p '#{{pid}}:#{{start_time}}' 2>/dev/null)" = {shlex.quote(server)} ] || exit 44\n'''
                     if server is not None else "")
+    clipboard_setup = '''
+# The local clipboard handler supplies OSC 52 support for this client. Keep
+# application-originated clipboard writes disabled unless already enabled.
+if [ "$(tm show-options -sv set-clipboard)" = off ]; then
+    tm set-option -s set-clipboard external
+fi
+''' if clipboard else ""
+    attach_command = shlex.join(tmux_args(profile) + (["-T", "clipboard"] if clipboard else []))
     candidate = 1_000_000 + int(scope[:7], 16)
     # After first attachment, require creation time as well as PID. If a killed
     # local app cannot clean up its hooks, a later unrelated client reusing that
@@ -149,6 +158,7 @@ def attach_script(profile: Profile, scope: str, session_id: str, attempt: str, s
     )
     return prelude(profile) + server_check + f'''
 tm has-session -t {shlex.quote(session_id)} 2>/dev/null || exit 44
+{clipboard_setup}
 tm set-option -s {key}-generation {attempt}
 previous=$(tm show-options -svq {key}-identity 2>/dev/null || :)
 if [ -n "$previous" ]; then
@@ -188,5 +198,5 @@ tm set-option -s {key}-index "$index"
 tm set-option -s {key}-identity ''
 tm set-hook -g "client-attached[$index]" {shlex.quote(remember)}
 tm set-hook -g "client-session-changed[$index]" {shlex.quote(remember)}
-exec {shlex.join(tmux_args(profile))} attach-session -t {shlex.quote(session_id)}
+exec {attach_command} attach-session -t {shlex.quote(session_id)}
 '''
