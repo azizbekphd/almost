@@ -103,7 +103,9 @@ class TmuxTests(unittest.TestCase):
                     self.tm("send-keys", "-X", "-t", "$0", command)
                 terminal.send(key)
                 terminal.wait_for(lambda: self.tm("show-buffer") == text)
-                expected = (text + ("\n" if mode == "vi" else "")).encode()
+                # tmux versions differ on whether vi end-of-line includes a
+                # newline. The local clipboard must match the actual buffer.
+                expected = subprocess.check_output(["tmux", "-L", self.socket, "save-buffer", "-"])
                 with patch("almost.clipboard.subprocess.run") as copy:
                     clipboard = Clipboard(["local-clipboard"])
                     offset = 0
